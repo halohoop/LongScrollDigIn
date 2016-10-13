@@ -13,6 +13,7 @@
 package com.tplink.judgetheendofthescrollableview.widgets;
 
 import android.content.Context;
+import android.graphics.Canvas;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -30,5 +31,10 @@ public class SuperScrollView extends View {
     public boolean dispatchTouchEvent(MotionEvent event) {
 
         return super.dispatchTouchEvent(event);
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.onDraw(canvas);
     }
 }
