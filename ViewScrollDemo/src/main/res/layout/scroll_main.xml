@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context=".ListActivity">
+
+    <ScrollView
+        android:id="@+id/sv"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="8">
+
+        <TextView
+            android:text="halo1\nhalo1\nhalo1\nhalo1\nhalo2\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo3\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo4\nhalo1\nhalo1\nhalo5\nhalo1\nhalo7\nhalo6\nhalo8\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo9\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo11\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo12\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo1\nhalo13\nhalo1\nhalo1\nhalo14\n"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"></TextView>
+    </ScrollView>
+
+    <ImageView
+        android:id="@+id/iv"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"/>
+
+
+</LinearLayout>
