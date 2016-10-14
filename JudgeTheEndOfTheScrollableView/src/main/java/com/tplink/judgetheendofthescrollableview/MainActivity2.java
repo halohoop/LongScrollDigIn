@@ -14,6 +14,8 @@ package com.tplink.judgetheendofthescrollableview;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Bundle;
@@ -53,14 +55,20 @@ public class MainActivity2 extends AppCompatActivity {
 
     public void click(View view) {
         WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
-        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(WindowManager.LayoutParams.TYPE_SYSTEM_ERROR,
+        WindowManager.LayoutParams layoutParams = new WindowManager.LayoutParams(WindowManager
+                .LayoutParams.TYPE_SYSTEM_ERROR,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
                         | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
                         | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
                         | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
                 PixelFormat.TRANSLUCENT);
         SuperScrollView superScrollView = new SuperScrollView(this);
-        superScrollView.setBackgroundColor(Color.RED);
+        superScrollView.setBackgroundColor(Color.BLACK);
+
+//        Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.ic_launcher);
+        Bitmap bitmap = BitmapFactory.decodeFile
+                ("/mnt/sdcard/Pictures/Screenshots/Screenshot_2016-01-04-10-26-16.png");
+        superScrollView.setInitBitmaps(bitmap, null);
         wm.addView(superScrollView, layoutParams);
     }
 }
