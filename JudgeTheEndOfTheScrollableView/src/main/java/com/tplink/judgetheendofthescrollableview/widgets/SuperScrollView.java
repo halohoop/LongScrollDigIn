@@ -1,7 +1,7 @@
 /*
  * Copyright (C) 2016, TP-LINK TECHNOLOGIES CO., LTD.
  *
- * SuperScrollView2.java
+ * SuperScrollView.java
  *
  * super
  *
@@ -19,18 +19,20 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.support.annotation.Nullable;
+import android.util.AttributeSet;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.LinearInterpolator;
 
-public class SuperScrollView extends View implements GestureDetector.OnDoubleTapListener {
+public class SuperScrollView extends View {
     private static final float MAX_VIEW_HEIGHT = 1280;
-    private static final float MAX_VIEW_WIDTH = 720;
+    private static final float MAX_VIEW_WIDTH = 720 - 160;
+    private static final float MAX_902_WIDTH = 720;
+    private static final float MAX_902_HEIGHT = 1280;
     private static final String TAG = "SuperScrollView";
     private Bitmap mBitmap = null;
-    private GestureDetector mGestureDetector;
     private boolean isAllowDebug = true;
     private int mMaxUpScrollDistance;
     private int mMaxDownScrollDistance;
@@ -42,22 +44,28 @@ public class SuperScrollView extends View implements GestureDetector.OnDoubleTap
     private boolean mIsTheFooterIsNotNull = false;
     private Bitmap mFooterBitmap;
     private boolean mIsNeedShrink = false;
-    private boolean mIsEnd = false;
+    private boolean mIsNoMoreBitmap = false;
     private float mShrinkDrawXPosition = 0;
     private float mAnimShrinkDrawXPosition = 0;
     private boolean mIsShrinkAnimationing = false;
 
     public SuperScrollView(Context context) {
-        super(context);
+        this(context, null);
+    }
+
+    public SuperScrollView(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
+
+    public SuperScrollView(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
         init();
     }
 
     private void init() {
-        mGestureDetector = new GestureDetector(getContext(), new GestureListener());
-        mGestureDetector.setOnDoubleTapListener(this);
     }
 
-    public void setInitBitmaps(Bitmap bitmap, @Nullable Bitmap footerBitmap) {
+    public void setInitBitmaps(Bitmap bitmap, Bitmap footerBitmap) {
         mBitmap = bitmap;
         if (footerBitmap != null) {
             mFooterBitmap = footerBitmap;
@@ -68,12 +76,14 @@ public class SuperScrollView extends View implements GestureDetector.OnDoubleTap
         invalidate();
     }
 
-    public void expandBitmap(Bitmap bitmap) {
+    private void expandBitmap() {
         if (mBitmap == null) {
             throw new IllegalArgumentException("please call setInitBitmaps first");
         }
+        Bitmap bitmap = mBitmapDataHelper.getMore();
         if (bitmap == null) {
-            mIsEnd = true;
+            mIsNoMoreBitmap = true;
+            return;
         }
         Bitmap newMergeBitmap = Bitmap.createBitmap(mBitmap.getWidth(),
                 mBitmap.getHeight() + bitmap.getHeight(),
@@ -88,11 +98,45 @@ public class SuperScrollView extends View implements GestureDetector.OnDoubleTap
         updateShrinkRatio();
     }
 
+    public void endScroll(){
+        Bitmap finalBitmap = mergeFinalBitmap();
+        mBitmapDataHelper.onScrollShotEnd(finalBitmap);
+    }
+
+    private Bitmap mergeFinalBitmap() {
+        int finalHeight = mBitmap.getHeight() +
+                (mFooterBitmap != null ? mFooterBitmap.getHeight() : 0);
+        Bitmap finalBitmap = Bitmap.createBitmap(mBitmap.getWidth(), finalHeight, Bitmap.Config
+                .ARGB_8888);
+        Canvas canvas = new Canvas(finalBitmap);
+        canvas.drawBitmap(mBitmap, 0, 0, null);
+        if (mFooterBitmap != null) {
+            canvas.drawBitmap(mFooterBitmap, 0, mBitmap.getHeight(), null);
+        }
+        recycleBitmap(mBitmap);
+        recycleBitmap(mFooterBitmap);
+        mBitmap = null;
+        mFooterBitmap = null;
+        return finalBitmap;
+    }
+
+    private void recycleBitmap(Bitmap bitmap) {
+        if (bitmap != null && !bitmap.isRecycled()) {
+            bitmap.recycle();
+        }
+    }
+
+
     private void updateShrinkRatio() {
-        mShirnkScaleRatio = MAX_VIEW_HEIGHT / ((float) mBitmap.getHeight());
+        mShirnkScaleRatio = MAX_VIEW_HEIGHT / ((float) mBitmap.getHeight() +
+                (mFooterBitmap != null ?
+                        mFooterBitmap.getHeight() : 0));
         mAnimShirnkScaleRatio = mShirnkScaleRatio;
     }
 
+    public float getScrollDeltaY() {
+        return mScrollDeltaY;
+    }
 
     private void updateMaxScroll() {
         mMaxUpScrollDistance = (int) (-mBitmap.getHeight() - (mFooterBitmap != null ?
@@ -100,9 +144,22 @@ public class SuperScrollView extends View implements GestureDetector.OnDoubleTap
         mMaxDownScrollDistance = 0;
     }
 
+    public interface BitmapDataHelper {
+        Bitmap getMore();
+
+        void onScrollShotEnd(Bitmap finalBitmap);
+    }
+
+    private BitmapDataHelper mBitmapDataHelper;
+
+    public void setBitmapDataHelper(BitmapDataHelper bitmapDataHelper) {
+        this.mBitmapDataHelper = bitmapDataHelper;
+    }
+
+    private int mGetMoreCount = 0;
+
     @Override
     public boolean dispatchTouchEvent(MotionEvent event) {
-        mGestureDetector.onTouchEvent(event);
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 mDownY = event.getY();
@@ -112,7 +169,11 @@ public class SuperScrollView extends View implements GestureDetector.OnDoubleTap
                     mMoveY = event.getY();
                     float deltaYMove = mMoveY - mDownY;
                     mScrollDeltaY += deltaYMove;
-
+                    float abs = Math.abs(mScrollDeltaY - mMaxUpScrollDistance);
+                    if (!mIsNoMoreBitmap && abs <= MAX_VIEW_HEIGHT && mGetMoreCount < 5) {
+                        mGetMoreCount++;
+                        expandBitmap();
+                    }
                     if (mScrollDeltaY > 0) {
                         mScrollDeltaY = 0;
                     }
@@ -125,11 +186,11 @@ public class SuperScrollView extends View implements GestureDetector.OnDoubleTap
                 break;
             case MotionEvent.ACTION_UP:
                 mMoveY = event.getY();
-
                 float deltaYUp = mMoveY - mDownY;
                 mScrollDeltaY += deltaYUp;
                 invalidate();
                 mDownY = mMoveY;
+                mGetMoreCount = 0;
                 break;
         }
         return true;
@@ -138,21 +199,28 @@ public class SuperScrollView extends View implements GestureDetector.OnDoubleTap
     @Override
     protected void onDraw(Canvas canvas) {
         canvas.save();
+        canvas.scale(MAX_VIEW_WIDTH / MAX_902_WIDTH, MAX_VIEW_WIDTH / MAX_902_WIDTH);
         if (mIsNeedShrink) {
             if (!mIsShrinkAnimationing) {
                 canvas.scale(mShirnkScaleRatio, mShirnkScaleRatio);
                 canvas.drawBitmap(mBitmap, mShrinkDrawXPosition / mShirnkScaleRatio, 0, null);
                 if (mIsTheFooterIsNotNull) {
-                    canvas.drawBitmap(mFooterBitmap, mShrinkDrawXPosition, mBitmap.getHeight(),
+                    canvas.drawBitmap(mFooterBitmap,
+                            mShrinkDrawXPosition / mShirnkScaleRatio,
+                            MAX_VIEW_HEIGHT - mFooterBitmap.getHeight() - mScrollDeltaY,
                             null);
                 }
             } else {
                 canvas.scale(mAnimShirnkScaleRatio, mAnimShirnkScaleRatio);
                 canvas.translate(0, mScrollDeltaY * mAnimShirnkScaleRatio);
                 Log.i(TAG, "onDraw: " + (mAnimShrinkDrawXPosition / mAnimShirnkScaleRatio));
-                canvas.drawBitmap(mBitmap, mAnimShrinkDrawXPosition / mAnimShirnkScaleRatio, 0, null);
+                canvas.drawBitmap(mBitmap, mAnimShrinkDrawXPosition / mAnimShirnkScaleRatio, 0,
+                        null);
                 if (mIsTheFooterIsNotNull) {
-                    canvas.drawBitmap(mFooterBitmap, mShrinkDrawXPosition, mBitmap.getHeight(),
+                    canvas.drawBitmap(mFooterBitmap,
+                            mAnimShrinkDrawXPosition / mAnimShirnkScaleRatio,
+                            (MAX_VIEW_HEIGHT - mFooterBitmap.getHeight() - mScrollDeltaY)
+                                    / mAnimShirnkScaleRatio,
                             null);
                 }
             }
@@ -160,139 +228,16 @@ public class SuperScrollView extends View implements GestureDetector.OnDoubleTap
             canvas.translate(0, mScrollDeltaY);
             canvas.drawBitmap(mBitmap, 0, 0, null);
             if (mIsTheFooterIsNotNull) {
-                canvas.drawBitmap(mFooterBitmap, 0, mBitmap.getHeight(), null);
+                canvas.drawBitmap(mFooterBitmap, 0,
+                        MAX_VIEW_HEIGHT - mFooterBitmap.getHeight() - mScrollDeltaY,
+                        null);
             }
         }
         canvas.restore();
     }
 
-    @Override
-    public boolean onSingleTapConfirmed(MotionEvent e) {
-        if (isAllowDebug) {
-            Log.i("onSingleTapConfirmed", "Gesture onSingleTapConfirmed");
-        }
-        return true;
+    public Bitmap getBitmap() {
+        return mBitmap;
     }
 
-    @Override
-    public boolean onDoubleTap(MotionEvent e) {
-        if (isAllowDebug) {
-            Log.i("onDoubleTap", "Gesture onDoubleTap");
-        }
-        if (mIsNeedShrink) {
-            ValueAnimator shrinkAnim = ValueAnimator.ofFloat(mShirnkScaleRatio, 1);
-            shrinkAnim.setDuration(250).setInterpolator(new LinearInterpolator());
-            shrinkAnim.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    mIsShrinkAnimationing = true;
-                }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    mIsShrinkAnimationing = false;
-                    mIsNeedShrink = false;
-                    mShrinkDrawXPosition = mAnimShrinkDrawXPosition;
-                    invalidate();
-                }
-            });
-            shrinkAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    float ratio = (float) animation.getAnimatedValue();
-                    mAnimShirnkScaleRatio = ratio;
-                    mAnimShrinkDrawXPosition = MAX_VIEW_WIDTH / 2 - mBitmap.getWidth() *
-                            mAnimShirnkScaleRatio / 2;
-                    invalidate();
-                }
-            });
-            shrinkAnim.start();
-        } else {
-            ValueAnimator shrinkAnim = ValueAnimator.ofFloat(1, mShirnkScaleRatio);
-            shrinkAnim.setDuration(250).setInterpolator(new LinearInterpolator());
-            shrinkAnim.addListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    mIsNeedShrink = true;//important
-                    mIsShrinkAnimationing = true;
-                }
-
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    mIsShrinkAnimationing = false;
-                    mIsNeedShrink = true;
-                    mShrinkDrawXPosition = mAnimShrinkDrawXPosition;
-                    invalidate();
-                }
-            });
-            shrinkAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-                @Override
-                public void onAnimationUpdate(ValueAnimator animation) {
-                    float ratio = (float) animation.getAnimatedValue();
-                    mAnimShirnkScaleRatio = ratio;
-                    mAnimShrinkDrawXPosition = MAX_VIEW_WIDTH / 2 - mBitmap.getWidth() *
-                            mAnimShirnkScaleRatio / 2;
-                    invalidate();
-                }
-            });
-            shrinkAnim.start();
-        }
-        return true;
-    }
-
-    @Override
-    public boolean onDoubleTapEvent(MotionEvent e) {
-        if (isAllowDebug) {
-            Log.i("onDoubleTapEvent", "Gesture onDoubleTapEvent");
-        }
-        return true;
-    }
-
-    //OnGestureListener监听
-    private class GestureListener implements GestureDetector.OnGestureListener {
-
-        public boolean onDown(MotionEvent e) {
-            if (isAllowDebug) {
-                Log.i("onDown", "Gesture onDown");
-            }
-            return true;
-        }
-
-        public void onShowPress(MotionEvent e) {
-            if (isAllowDebug) {
-                Log.i("onShowPress", "Gesture onShowPress");
-            }
-        }
-
-        public boolean onSingleTapUp(MotionEvent e) {
-            if (isAllowDebug) {
-                Log.i("onSingleTapUp", "Gesture onSingleTapUp");
-            }
-            return true;
-        }
-
-        public boolean onScroll(MotionEvent e1, MotionEvent e2,
-                                float distanceX, float distanceY) {
-            if (isAllowDebug) {
-                Log.i("onScroll", "Gesture onScroll:" + (e2.getX() - e1.getX()) + "   " +
-                        distanceX);
-            }
-
-            return true;
-        }
-
-        public void onLongPress(MotionEvent e) {
-            if (isAllowDebug) {
-                Log.i("onLongPress", "Gesture onLongPress");
-            }
-        }
-
-        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX,
-                               float velocityY) {
-            if (isAllowDebug) {
-                Log.i("onFling", "Gesture onFling velocityY:" + velocityY);
-            }
-            return true;
-        }
-    }
 }

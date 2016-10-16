@@ -17,8 +17,6 @@ import android.graphics.Rect;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ListView;
 import android.widget.ScrollView;
@@ -31,7 +29,7 @@ public class SuperScrollHelper {
 
     private static int getNextScrollDeltaY(View scrollableView) {
         boolean b = scrollableView.canScrollVertically(1);
-        Log.i(TAG, "canScrollVertically: "+b);
+        Log.i(TAG, "canScrollVertically: " + b);
         if (scrollableView != null && b) {
             if (scrollableView instanceof ListView) {
                 Rect scrollableViewRect = new Rect();
@@ -78,7 +76,7 @@ public class SuperScrollHelper {
                 int currentScrollY = scrollView.getScrollY();
                 View childAt = scrollView.getChildAt(0);
                 int paddingBottom = scrollView.getPaddingBottom();
-                Log.i(TAG, "ScrollView paddingBottom: "+paddingBottom);
+                Log.i(TAG, "ScrollView paddingBottom: " + paddingBottom);
                 Rect childAtRect = new Rect();
                 childAt.getGlobalVisibleRect(childAtRect);
                 int maxScrollAmount = childAt.getHeight() - childAtRect.height();
@@ -100,9 +98,16 @@ public class SuperScrollHelper {
         return 0;
     }
 
+    public static int mAllBitmapHeight = 0;
+
     public static Bitmap getNextScrollDeltaYBitmap(View decorView, View scrollableView) {
         int nextScrollDeltaY = getNextScrollDeltaY(scrollableView);
+        mAllBitmapHeight += nextScrollDeltaY;
+        if ((mAllBitmapHeight + MAX_902_HEIGHT) > MAX_BITMAP_902_CAN_SHOW) {
+            return null;
+        }
         Rect scrollDeltaYRect = new Rect();
+        Bitmap bitmap = null;
         if (scrollableView instanceof ListView) {
             ListView listView = (ListView) scrollableView;
             listView.scrollListBy(nextScrollDeltaY);
@@ -110,7 +115,7 @@ public class SuperScrollHelper {
                 listView.scrollListBy(listView.getDividerHeight());
                 nextScrollDeltaY += listView.getDividerHeight();
             }
-            return getScrollBitmap(decorView, scrollableView,
+            bitmap = getScrollBitmap(decorView, scrollableView,
                     nextScrollDeltaY, scrollDeltaYRect);
         } else if (scrollableView instanceof GridView) {
             GridView gridView = (GridView) scrollableView;
@@ -120,16 +125,18 @@ public class SuperScrollHelper {
                 gridView.scrollListBy(verticalSpacing);
                 nextScrollDeltaY += verticalSpacing;
             }
-            return getScrollBitmap(decorView, scrollableView,
+            bitmap = getScrollBitmap(decorView, scrollableView,
                     nextScrollDeltaY, scrollDeltaYRect);
         } else if (scrollableView instanceof ScrollView) {
             ScrollView scrollView = (ScrollView) scrollableView;
             scrollView.scrollBy(0, nextScrollDeltaY);
-            return getScrollBitmap(decorView, scrollableView,
+            bitmap = getScrollBitmap(decorView, scrollableView,
                     nextScrollDeltaY, scrollDeltaYRect);
         }
-        return null;
+        return bitmap;
     }
+    private static final float MAX_902_HEIGHT = 1280;
+    private static final float MAX_BITMAP_902_CAN_SHOW = 8192;
 
     @Nullable
     private static Bitmap getScrollBitmap(View decorView, View scrollableView, int
@@ -141,7 +148,7 @@ public class SuperScrollHelper {
                 childAt.getGlobalVisibleRect(childRect);
                 scrollDeltaYRect.set(0, childRect.bottom - nextScrollDeltaY,
                         SCREEN_WIDTH_OF_902, childRect.bottom);
-            }else{
+            } else {
                 scrollDeltaYRect.set(0, scrollDeltaYRect.bottom - nextScrollDeltaY,
                         SCREEN_WIDTH_OF_902, scrollDeltaYRect.bottom);
             }

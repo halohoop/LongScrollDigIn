@@ -1,1 +1,1 @@
-include ':ViewScrollDemo', ':HowBigTheSize902CanShow', ':JudgeTheEndOfTheScrollableView'
+include ':ViewScrollDemo', ':HowBigTheSize902CanShow', ':JudgeTheEndOfTheScrollableView', ':ForScrollShotDemo'
