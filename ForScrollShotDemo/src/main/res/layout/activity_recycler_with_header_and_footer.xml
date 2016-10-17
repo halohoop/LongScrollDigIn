@@ -21,7 +21,7 @@
         android:layout_alignParentBottom="true"
         android:background="#00f"
         android:padding="20dp"
-        android:text="header"/>
+        android:text="footer"/>
 
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rv"

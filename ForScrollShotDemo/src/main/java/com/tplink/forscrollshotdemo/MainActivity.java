@@ -35,6 +35,11 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    public void webview(View view) {
+        Intent intent = new Intent(this, WebViewActivity.class);
+        startActivity(intent);
+    }
+
     public void recyclerview(View view) {
         Intent intent = new Intent(this, RecyclerActivity.class);
         startActivity(intent);
@@ -57,6 +62,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void RecyclerViewWithHeader(View view) {
         Intent intent = new Intent(this, RecyclerViewWithHeaderActivity.class);
+        startActivity(intent);
+    }
+
+    public void WebViewWithHeader(View view) {
+        Intent intent = new Intent(this, WebViewWithHeaderActivity.class);
         startActivity(intent);
     }
 }
